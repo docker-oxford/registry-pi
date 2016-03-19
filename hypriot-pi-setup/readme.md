@@ -5,4 +5,5 @@ This playbook assumes that you already have an SSH key at `~/.ssh/id_rsa`. All s
     192.168.0.123" > hosts
 
     # Run the playbook
+    # The password is `hypriot`
     ansible-playbook setup.yml --user root --ask-pass

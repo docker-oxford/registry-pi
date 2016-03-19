@@ -1,12 +1,12 @@
 # pi-registry
 
-Docker Registry on Raspberry Pi.
+Docker Registry on a Raspberry Pi.
 
 ## DNS
 
 Follow the setup in [local-registry](https://github.com/docker-oxford/local-registry) for keys and a trusted DNS.
 
-If you don't set it up, you can still use your registry, but you'll have to tell everyone using it to add `--insecure-registry ip.or.hostname:port` to  `/etc/defaults/docker` and restart the Docker Engine.
+If you don't set up DNS and real certificates, you can still use your registry, but you'll have to tell everyone using it to add `--insecure-registry ip.or.hostname:port` to  `/etc/defaults/docker` and restart the Docker Engine. That will completely disable security for any interaction with your registry, and may (will) cause (various) problems with authentication later on.
 
 ## OS
 
@@ -26,7 +26,7 @@ We'll use the web server setup from the [official documentation](https://docs.do
 
 Tested on Mac. The steps will be similar on Linux (PRs welcome for Linux steps).
 
-    ## NOTE: You are responsible for your own data. This tutorial assumes that you have made recent backups of your laptop and other devices, that you are using a blank SD card or are happy to erase the data on it. I will in no way be held responsible for any data loss incurred by following these steps.
+    ## NOTE: You are responsible for your own data. This tutorial assumes that you have made recent backups of your laptop and other devices, that you are using a blank SD card or are happy to erase all data on it. The author does not take responsibility for any data loss incurred by following any advice given in this document.
 
     # Download Hypriot OS
     wget https://downloads.hypriot.com/hypriot-rpi-20160306-192317.img.zip
@@ -65,9 +65,9 @@ Tested on Mac. The steps will be similar on Linux (PRs welcome for Linux steps).
     diskutil unmountDisk /dev/disk5
 
     # Write image to SD card
-    # WARNING: If you misuse dd you can end up destroying your system and lose data
+    # WARNING: If you misuse the dd command you can end up destroying your system and lose data
     # Double-check this command twice and make sure that of=/dev/rdisk5 corresponds to your SD card.
-    # dd won't ask you if you really want to write to your boot partition, it will do exactly what you tell it to. Silently.
+    # dd will not warn you before overwriting your boot partition. It will do exactly what you tell it to. Silently.
     #
     # if = input file (where to read from)
     # of = output file (where to write to)
@@ -76,11 +76,50 @@ Tested on Mac. The steps will be similar on Linux (PRs welcome for Linux steps).
     # Here we read from the image file and write directly to the (unbuffered) block device /dev/rdisk5
     sudo dd if=hypriot-rpi-20160306-192317.img of=/dev/rdisk5 bs=524288
 
-    # Insert the SD card into your Raspberry Pi and plug the Pi with a cable to your router. It needs a DHCP server to get an IP address.
+    # Insert the SD card into your Raspberry Pi and plug the Pi with an Ethernet cable to your router. It needs a DHCP server to get an IP address.
     # When the Pi has booted, find its IP from the router's list of connected hosts.
 
-## Pi configuration (OPTIONAL)
+The default SSH username is `root` with password `hypriot`.
 
-You need [Ansible](http://www.ansible.com) installed for this. You can skip this step, but it will make it easier and more secure to interact with the pi. If you skip this, at least change the default root password and disable root SSH access.
+## Pi configuration (optional)
 
-    Follow the steps in the [readme](setup/readme.md)
+You need [Ansible](http://www.ansible.com) installed for this. You can skip this step, but doing this will make it easier and more secure to interact with the pi. If you skip this step, at least change the default root password and disable root SSH access.
+
+Instructions in the [hypriot-pi-setup readme](hypriot-pi-setup/readme.md).
+
+## Build Dockerimages
+
+Registry
+
+    # SCP over the modified Dockerfile
+    scp rpi-registry-Dockerfile 192.168.0.123:
+
+    # Clone the distribution repo
+    git clone https://github.com/docker/distribution.git
+
+    # Update the Dockerfile
+    mv rpi-registry-Dockerfile distribution/Dockerfile
+
+    # Build the registry Dockerimage
+    cd distribution
+    docker build --tag rpi-registry .
+
+    # Check your images
+    docker images
+    REPOSITORY           TAG                 IMAGE ID            CREATED             SIZE
+    rpi-registry         latest              5546c77ac10a        3 hours ago         777.6 MB
+    hypriot/rpi-swarm    latest              c298de062190        13 days ago         13.27 MB
+    hypriot/rpi-golang   tar-1.5.2           a1254db987ac        12 weeks ago        408.6 MB
+
+Webserver
+
+    # Copy over the files from rpi-httpd
+    rsync -rv rpi-httpd 192.168.0.123:
+
+    # SSH in
+    ssh 192.168.0.123
+
+    # Become root and build Dockerimage
+    sudo su -
+    cd /home/yourusername/rpi-httpd #replace yourusername
+    docker build --tag rpi-httpd:2.4 .
