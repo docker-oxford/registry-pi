@@ -1,0 +1,52 @@
+---
+- name: ensure auth and data directories are created
+  file:
+    path: "/root/{{ item }}"
+    state: "directory"
+  with_items:
+    - "data"
+    - "auth"
+
+- name: ensure httpd conf is uploaded
+  template:
+    src: "httpd.conf.j2"
+    dest: "/root/auth/httpd.conf"
+
+- name: get htpasswd file contents
+  command: "cat /root/auth/httpd.htpasswd"
+  ignore_errors: yes
+  changed_when: false
+  register: htpasswd
+
+- name: generate admin user password hash
+  delegate_to: localhost
+  connection: local
+  become: false
+  command: "docker run --entrypoint htpasswd httpd:2.4 -bn admin {{ admin_password }}"
+  when: not htpasswd.stdout | search('admin') or (admin_password is defined and admin_password != "")
+  register: generated_password
+
+- name: add admin to htpasswd
+  lineinfile:
+    regexp: "^admin"
+    line: "{{ generated_password.stdout }}"
+    dest: "/root/auth/httpd.htpasswd"
+    create: yes
+  when: generated_password | changed
+
+- name: ensure admin is added to pusher group
+  lineinfile:
+    regexp: "^pusher"
+    line: "pusher: admin"
+    dest: "/root/auth/httpd.groups"
+    create: yes
+
+- name: ensure ssl certificate is uploaded
+  copy:
+    src: "{{ ssl_certificate }}"
+    dest: "/root/auth/domain.crt"
+
+- name: ensure ssl key is uploaded
+  copy:
+    src: "{{ ssl_key }}"
+    dest: "/root/auth/domain.key"

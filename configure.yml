@@ -1,0 +1,16 @@
+---
+- hosts: pi
+  become: true
+
+  vars_prompt:
+    - name: "admin_password"
+      prompt: "Please input an admin password (hit enter to leave it unchanged)"
+      private: yes
+
+  vars:
+    - ssl_certificate: "~/.ssl/registry/fullchain1.pem"
+    - ssl_key: "~/.ssl/registry/privkey1.pem"
+
+  roles:
+    - auth
+    - start

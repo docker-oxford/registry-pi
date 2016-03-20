@@ -1,0 +1,31 @@
+- name: check if registry is running
+  command: "docker ps"
+  register: running_status
+  changed_when: false
+
+- name: check all containers
+  command: "docker ps -a"
+  register: all_status
+  changed_when: false
+
+- name: remove old registry container if stopped
+  command: "docker rm registry"
+  when: not running_status.stdout | search('rpi-registry') and all_status.stdout | search('rpi-registry')
+
+- name: start registry
+  command: "docker run -d -p 127.0.0.1:5000:5000 -v /root/data:/var/lib/registry --name registry rpi-registry"
+  when: not running_status.stdout | search('rpi-registry')
+
+- name: check that registry is running (if this fails registry is not working properly)
+  command: "curl localhost:5000/v2/"
+  register: curl_check
+  failed_when: curl_check.stdout != "{}"
+  changed_when: false
+
+- name: remove old apache container if stopped
+  command: "docker rm apache"
+  when: not running_status.stdout | search('rpi-httpd') and all_status.stdout | search('rpi-httpd')
+
+- name: start apache
+  command: "docker run -d -p 443:5043 -v /root/auth:/usr/local/apache2/conf --hostname {{ registry_fqdn }} --link registry:registry --name apache rpi-httpd:2.4"
+  when: not running_status.stdout | search('rpi-httpd')

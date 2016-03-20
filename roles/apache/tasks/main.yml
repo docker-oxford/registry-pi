@@ -10,6 +10,11 @@
     dest: "/root/rpi-httpd"
   with_fileglob: "*" #all files in this role's files directory
 
+- name: ensure httpd-foreground is runnable
+  file:
+    path: "/root/rpi-httpd/httpd-foreground"
+    mode: "755"
+
 - name: check if dockerimage exists
   shell: docker images | grep rpi-httpd | awk '{ print $2 }'
   register: docker_image_tag
