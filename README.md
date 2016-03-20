@@ -205,3 +205,27 @@ This is a variation on the script from the [official site](https://docs.docker.c
     5f70bf18a086: Pushed
     1834950e52ce: Pushed
     latest: digest: sha256:6757d4b17cd75742fc3b1fc1a8d02b45b637f2ac913ee9669f5c2aed0c9b26ba size: 711
+
+    # Log in as user
+    docker login myregistrydomain.com
+    Username: user
+    Password:
+    Email:
+    Login Succeeded
+
+    # Pull image
+    docker pull myregistrydomain.com/library/busybox
+    Using default tag: latest
+    latest: Pulling from library/busybox
+
+    385e281300cc: Already exists
+    a3ed95caeb02: Already exists
+    Digest: sha256:4a731fb46adc5cefe3ae374a8b6020fc1b6ad667a279647766e9a3cd89f6fa92
+    Status: Image is up to date for myregistrydomain.com/library/busybox:latest
+
+    # Try pushing as user (won't work!)
+    docker push myregistrydomain.com/library/busybox
+    The push refers to a repository [myregistrydomain.com/library/busybox]
+    5f70bf18a086: Layer already exists
+    1834950e52ce: Layer already exists
+    unauthorized: authentication required
