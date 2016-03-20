@@ -18,7 +18,7 @@
   changed_when: false
   register: htpasswd
 
-- name: generate admin user password hash
+- name: generate admin password hash
   delegate_to: localhost
   connection: local
   become: false
@@ -33,6 +33,22 @@
     dest: "/root/auth/httpd.htpasswd"
     create: yes
   when: generated_password | changed
+
+- name: generate user password hash
+  delegate_to: localhost
+  connection: local
+  become: false
+  command: "docker run --entrypoint htpasswd httpd:2.4 -bn user {{ user_password }}"
+  when: not htpasswd.stdout | search('user') or (user_password is defined and user_password != "")
+  register: generated_password_user
+
+- name: add user to htpasswd
+  lineinfile:
+    regexp: "^user"
+    line: "{{ generated_password_user.stdout }}"
+    dest: "/root/auth/httpd.htpasswd"
+    create: yes
+  when: generated_password_user | changed
 
 - name: ensure admin is added to pusher group
   lineinfile:

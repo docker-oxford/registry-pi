@@ -37,6 +37,10 @@ We'll use the web server setup from the [official documentation](https://docs.do
 
 # Setting it up
 
+## Preparations
+
+Before you begin, ensure that you have the latest versions of [Ansible](http://www.ansible.com) and [Docker](http://www.docker.com) on your local machine.
+
 ## OS installation
 
 *Time required: 5 min*
@@ -98,11 +102,9 @@ Tested on Mac. The steps will be similar on Linux (PRs welcome for Linux steps).
 
 The default SSH username is `root` with password `hypriot`.
 
-## Pi configuration (optional)
+## Pi setup
 
 *Time required: 4 min*
-
-You need to install [Ansible](http://www.ansible.com) first.
 
 The initial setup assumes that you already have an SSH keypair at `~/.ssh/id_rsa` and `~/.ssh/id_rsa.pub`.
 
@@ -118,8 +120,6 @@ The initial setup assumes that you already have an SSH keypair at `~/.ssh/id_rsa
 
 ## Build Dockerimages
 
-### Automated with Ansible
-
 *Time required: 53 min*
 
     # Run playbook
@@ -128,52 +128,9 @@ The initial setup assumes that you already have an SSH keypair at `~/.ssh/id_rsa
 
     ansible-playbook build.yml
 
-These are the tasks performed by the Ansible playbook:
-
-Registry
-
-    # SCP over the modified Dockerfile
-    scp rpi-registry-Dockerfile 192.168.0.123:
-
-    # Clone the distribution repo
-    git clone https://github.com/docker/distribution.git
-
-    # Update the Dockerfile
-    mv rpi-registry-Dockerfile distribution/Dockerfile
-
-    # Build the registry Dockerimage
-    cd distribution
-    docker build --tag rpi-registry .
-
-    # Check your images
-    docker images
-    REPOSITORY           TAG                 IMAGE ID            CREATED             SIZE
-    rpi-registry         latest              5546c77ac10a        3 hours ago         777.6 MB
-    hypriot/rpi-swarm    latest              c298de062190        13 days ago         13.27 MB
-    hypriot/rpi-golang   tar-1.5.2           a1254db987ac        12 weeks ago        408.6 MB
-
-Webserver
-
-    # Copy over the files from rpi-httpd
-    rsync -rv rpi-httpd 192.168.0.123:
-
-    # SSH in
-    ssh 192.168.0.123
-
-    # Become root and build Dockerimage
-    sudo su -
-    cd /home/yourusername/rpi-httpd #replace yourusername
-    docker build --tag rpi-httpd:2.4 .
-
-    # Here are your images now
-    docker images
-    REPOSITORY           TAG                 IMAGE ID            CREATED             SIZE
-    rpi-httpd            2.4                 7cc6cde0c440        7 minutes ago       477.6 MB
-    rpi-registry         latest              5546c77ac10a        4 hours ago         777.6 MB
-    hypriot/rpi-swarm    latest              c298de062190        13 days ago         13.27 MB
-    hypriot/rpi-golang   tar-1.5.2           a1254db987ac        12 weeks ago        408.6 MB
-
 ## Configure
+
+*Time required: 10 min*
 
 This is a variation on the script from the [official site](https://docs.docker.com/registry/apache/). You will need Docker locally for one of the tasks.
 
@@ -182,14 +139,16 @@ This is a variation on the script from the [official site](https://docs.docker.c
     # Update the variables ssl_certificate and ssl_key in configure.yml
     # if your keys are elsewhere and/or have other names.
 
-    # Run the playbook (replace with your domain name)
+    # Run the playbook (replace domain name with yours)
     ansible-playbook configure.yml -e "registry_fqdn=yourregistrydomain.com"
 
-    # Ensure your DNS record is updated to point to the Raspberry Pi.
+    # Ensure your DNS record is updated with the IP of Raspberry Pi.
     # Then check (you may need to flush your DNS cache first)
     curl https://myregistrydomain.com
 
 ## Login
+
+From your local machine, you can now start interacting with the registry.
 
     # Log in as admin
     docker login myregistrydomain.com
@@ -206,7 +165,7 @@ This is a variation on the script from the [official site](https://docs.docker.c
     1834950e52ce: Pushed
     latest: digest: sha256:6757d4b17cd75742fc3b1fc1a8d02b45b637f2ac913ee9669f5c2aed0c9b26ba size: 711
 
-    # Log in as user
+    # Log in as the user
     docker login myregistrydomain.com
     Username: user
     Password:
@@ -229,3 +188,8 @@ This is a variation on the script from the [official site](https://docs.docker.c
     5f70bf18a086: Layer already exists
     1834950e52ce: Layer already exists
     unauthorized: authentication required
+
+# Limitations
+
+* Only tested on Raspberry Pi 3.
+* Building takes Forever[tm] - plenty of room for slimming down images and shortening up build time

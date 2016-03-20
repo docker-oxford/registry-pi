@@ -6,6 +6,9 @@
     - name: "admin_password"
       prompt: "Please input an admin password (hit enter to leave it unchanged)"
       private: yes
+    - name: "user_password"
+      prompt: "Please input a user password (hit enter to leave it unchanged)"
+      private: yes
 
   vars:
     - ssl_certificate: "~/.ssl/registry/fullchain1.pem"
