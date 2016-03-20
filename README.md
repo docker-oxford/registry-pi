@@ -1,4 +1,4 @@
-# pi-registry
+# registry-pi
 
 Docker Registry on a Raspberry Pi.
 
@@ -6,9 +6,9 @@ Tested on Raspberry Pi 3.
 
 ## Background
 
-If you have a group of 40 or more people in one room with limited bandwidth, and everyone trying to pull Dockerimages from Docker Hub, you are going to have a bad time.
+If you have a group of 40 or more people in one room with limited bandwidth, everyone trying to pull Dockerimages from Docker Hub, you are going to have a bad time.
 
-You can set up a registry proxy or a private registry locally to alleviate the network. This can (relatively easily) be done on a laptop, so why bother with a Raspberry Pi?
+You can set up a registry proxy or a private registry locally to alleviate the network. This can be done relatively easily on a laptop, so why bother with a Raspberry Pi?
 
 * Portable (you can keep it in your jacket pocket)
 * Energy efficient (runs on 5 V so you can use a regular phone charger)
@@ -25,7 +25,7 @@ If you don't set up DNS and real certificates, you can still use your registry, 
 
 ### OS
 
-The [Hypriot OS](http://blog.hypriot.com/downloads/) lets you run Docker on the pi.
+[Hypriot OS](http://blog.hypriot.com/downloads/) lets you run Docker on the pi.
 
 ### Registry
 
