@@ -2,6 +2,8 @@
 
 Docker Registry on a Raspberry Pi.
 
+Tested on Raspberry Pi 3.
+
 ## DNS
 
 Follow the setup in [local-registry](https://github.com/docker-oxford/local-registry) for keys and a trusted DNS.
@@ -18,7 +20,7 @@ We will build the registry for arm with `hypriot/rpi-golang` as the base image.
 
 ## Web server
 
-We'll use the web server setup from the [official documentation](https://docs.docker.com/registry/apache/), but alter it slightly to work on pi.
+We'll use the web server setup from the [official documentation](https://docs.docker.com/registry/apache/), but alter it slightly to work on pi. This will let us restrict pushing of images to an admin user.
 
 # Setting it up
 
@@ -123,3 +125,132 @@ Webserver
     sudo su -
     cd /home/yourusername/rpi-httpd #replace yourusername
     docker build --tag rpi-httpd:2.4 .
+
+    # Here are your images now
+    docker images
+    REPOSITORY           TAG                 IMAGE ID            CREATED             SIZE
+    rpi-httpd            2.4                 7cc6cde0c440        7 minutes ago       477.6 MB
+    rpi-registry         latest              5546c77ac10a        4 hours ago         777.6 MB
+    hypriot/rpi-swarm    latest              c298de062190        13 days ago         13.27 MB
+    hypriot/rpi-golang   tar-1.5.2           a1254db987ac        12 weeks ago        408.6 MB
+
+## User authentication
+
+These commands are a variation on the script from the [official site](https://docs.docker.com/registry/apache/).
+
+    # Upload and run config script for httpd
+    scp setup_httpd.sh 192.168.0.123:
+    ssh 192.168.0.123
+    sudo su -
+    mv /home/yourusername/setup_httpd.sh .
+    ./setup_httpd.sh yourregistrydomain.com #replace with your DNS name
+
+Create passwords for users and admin. You'll need to do this locally (it won't work on Raspberry Pi).
+
+    # On your local machine:
+    # create a password file for users
+    docker run --entrypoint htpasswd httpd:2.4 -bn user password > httpd.htpasswd
+    # Create an admin account (changing the password to something secret)
+    docker run --entrypoint htpasswd httpd:2.4 -bn admin changethispassword >> httpd.htpasswd
+    # Copy over to pi
+    scp httpd.passwd 192.168.0.123:
+
+    # SSH in
+    ssh 192.168.0.123
+
+    # Move file in place
+    sudo su -
+    mv /home/yourusername/httpd.passwd auth/
+
+    # Add admin to the pusher group
+    echo "pusher: admin" > auth/httpd.groups
+
+    # Add certificate files
+    # First copy the keys from your machine
+    # Here I'm using certificates issued by Letsencrypt.
+    # Put them in the auth folder with the names domain.{crt,key}
+    mv fullchain1.pem auth/domain.crt
+    mv privkey1.pem auth/domain.key
+
+## Start
+
+    # Start registry
+    cd /root/
+    docker run -d \
+      -p 127.0.0.1:5000:5000 \
+      -v ${PWD}/data:/var/lib/registry \
+      --name registry \
+      rpi-registry
+
+    # Check that it's running
+    curl localhost:5000/v2/_catalog
+    {"repositories":[]}
+
+\_
+
+    # Start apache (replace myregistrydomain.com with your domain name)
+    cd /root/
+    docker run -d \
+      -p 443:5043 \
+      -v ${PWD}/auth:/usr/local/apache2/conf \
+      --hostname myregistrydomain.com \
+      --link registry:registry \
+      --name apache \
+      rpi-httpd:2.4
+
+    # Check it's running
+    curl https://localhost
+    curl: (51) SSL: no alternative certificate subject name matches target host name 'localhost'
+
+    # Ensure your DNS record is updated to point to the Raspberry Pi.
+    # Then check (you may need to flush your DNS cache first)
+    curl https://myregistrydomain.com
+
+## Login
+
+    # Log in as admin
+    docker login myregistrydomain.com
+    Username: admin
+    Password:
+    Login Succeeded
+
+    # Push an image
+    docker pull busybox
+    docker tag busybox myregistrydomain.com/library/busybox
+    docker push myregistrydomain.com/library/busybox
+    The push refers to a repository [myregistrydomain.com/library/busybox]
+    5f70bf18a086: Pushed
+    1834950e52ce: Pushed
+    latest: digest: sha256:6757d4b17cd75742fc3b1fc1a8d02b45b637f2ac913ee9669f5c2aed0c9b26ba size: 711
+
+    # Log in as user
+    docker login myregistrydomain.com
+    Username: user
+    Password:
+    Email:
+    Login Succeeded
+
+    # Pull image
+    docker pull myregistrydomain.com/library/busybox
+    Using default tag: latest
+    latest: Pulling from library/busybox
+    385e281300cc: Already exists
+    a3ed95caeb02: Already exists
+    Digest: sha256:4a731fb46adc5cefe3ae374a8b6020fc1b6ad667a279647766e9a3cd89f6fa92
+    Status: Image is up to date for myregistrydomain.com/library/busybox:latest
+
+    # Try pushing as user (won't work!)
+    docker push myregistrydomain.com/library/busybox
+    The push refers to a repository [myregistrydomain.com/library/busybox]
+    5f70bf18a086: Layer already exists
+    1834950e52ce: Layer already exists
+    unauthorized: authentication required
+
+If you want to let anyone pull without logging in, you can comment this out in `httpd.conf`:
+
+    # Read access to authentified users
+    #<Limit GET HEAD>
+    #  Require valid-user
+    #</Limit>
+
+Restart the apache container for the change to take effect.
