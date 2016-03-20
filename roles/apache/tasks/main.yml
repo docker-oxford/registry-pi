@@ -1,0 +1,22 @@
+---
+- name: ensure rpi-httpd directory is created
+  file:
+    path: "/root/rpi-httpd"
+    state: "directory"
+
+- name: ensure files are uploaded
+  copy:
+    src: "{{ item }}"
+    dest: "/root/rpi-httpd"
+  with_fileglob: "*" #all files in this role's files directory
+
+- name: check if dockerimage exists
+  shell: docker images | grep rpi-httpd | awk '{ print $2 }'
+  register: docker_image_tag
+  changed_when: false
+
+- name: build dockerimage
+  command: "docker build --tag rpi-httpd:2.4 ."
+  args:
+    chdir: "/root/rpi-httpd"
+  when: docker_image_tag.stdout != "2.4"

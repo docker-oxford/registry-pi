@@ -1,7 +1,8 @@
 - name: ensure distribution repo is cloned
   git:
     repo: "https://github.com/docker/distribution.git"
-    dest: "/root/"
+    dest: "/root/distribution"
+    update: "no"
 
 - name: ensure modified dockerfile is uploaded
   copy:
@@ -11,9 +12,10 @@
 - name: check if dockerimage exists
   command: docker images
   register: docker_images
+  changed_when: false
 
-- name: ensure dockerimage is built
+- name: build dockerimage
   command: "docker build --tag rpi-registry ."
   args:
     chdir: "/root/distribution/"
-  when: not docker_images | search('rpi-registry')
+  when: not docker_images.stdout | search('rpi-registry')

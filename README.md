@@ -39,6 +39,8 @@ We'll use the web server setup from the [official documentation](https://docs.do
 
 ## OS installation
 
+*Time required: 5 min*
+
 Tested on Mac. The steps will be similar on Linux (PRs welcome for Linux steps).
 
     ## NOTE: You are responsible for your own data. This tutorial assumes that you have made recent backups of your laptop and other devices, that you are using a blank SD card or are happy to erase all data on it. The author does not take responsibility for any data loss incurred by following any advice given in this document.
@@ -98,9 +100,11 @@ The default SSH username is `root` with password `hypriot`.
 
 ## Pi configuration (optional)
 
-You need [Ansible](http://www.ansible.com) installed for this. You can skip this step, but doing this will make it easier and more secure to interact with the pi. If you skip this step, at least change the default root password and disable root SSH access.
+*Time required: 4 min*
 
-The role assumes that you already have an SSH key at `~/.ssh/id_rsa`.
+You need [Ansible](http://www.ansible.com) installed for this. You can skip this step, but running it will make it easier and more secure to interact with the pi. If you skip this step, at least change the default root password and disable root SSH access.
+
+The role assumes that you already have an SSH keypair at `~/.ssh/id_rsa` and `~/.ssh/id_rsa.pub`.
 
     # Add the Raspberry Pi IP to the file `hosts`
     # Replace 192.168.0.123 with the IP of your Raspberry Pi.
@@ -113,6 +117,19 @@ The role assumes that you already have an SSH key at `~/.ssh/id_rsa`.
 
 
 ## Build Dockerimages
+
+### Automated with Ansible
+
+*Time required: 53 min*
+
+    # Run playbook
+    # Registry role takes 31 min
+    # Apache role takes 22 min
+
+    ansible-playbook provision.yml
+
+
+### Manual steps
 
 Registry
 
@@ -157,7 +174,7 @@ Webserver
     hypriot/rpi-swarm    latest              c298de062190        13 days ago         13.27 MB
     hypriot/rpi-golang   tar-1.5.2           a1254db987ac        12 weeks ago        408.6 MB
 
-## User authentication
+User authentication
 
 These commands are a variation on the script from the [official site](https://docs.docker.com/registry/apache/).
 
