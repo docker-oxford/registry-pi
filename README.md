@@ -192,4 +192,4 @@ From your local machine, you can now start interacting with the registry.
 # Limitations
 
 * Only tested on Raspberry Pi 3.
-* Building takes Forever[tm] - plenty of room for slimming down images and shortening up build time
+* Building takes Forever[tm] - plenty of room for slimming down images and shortening build time
