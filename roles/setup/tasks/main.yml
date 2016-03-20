@@ -1,0 +1,55 @@
+---
+- name: check if python is installed
+  raw: python --version
+  ignore_errors: yes
+  register: python_check
+
+- name: ensure python is installed
+  raw: apt-get update && apt-get install -y python-simplejson
+  when: python_check | failed
+
+- name: get local username
+  command: whoami
+  delegate_to: localhost
+  connection: local
+  become: false
+  register: whoami
+  changed_when: false
+
+- name: ensure user is created
+  user:
+    name: "{{ username }}"
+    home: "/home/{{ username }}"
+
+- name: ensure user is added to sudoers
+  copy:
+    dest: "/etc/sudoers.d/user-{{ username }}"
+    content: "{{ username }} ALL=NOPASSWD: ALL"
+
+- name: ensure ssh directory exists
+  file:
+    path: "/home/{{ username }}/.ssh"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    state: "directory"
+
+- name: ensure ssh public key is uploaded for user
+  authorized_key:
+    user: "{{ username }}"
+    key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+    path: "/home/{{ username }}/.ssh/authorized_keys"
+
+- name: ensure root and password ssh are disabled
+  lineinfile:
+    line: "{{ item }} no"
+    regexp: "^{{ item }}"
+    dest: "/etc/ssh/sshd_config"
+  with_items:
+    - "PasswordAuthentication"
+    - "PermitRootLogin"
+  notify: restart ssh
+
+- name: ensure pi user is removed
+  user:
+    name: "pi"
+    state: "absent"

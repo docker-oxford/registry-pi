@@ -1,0 +1,8 @@
+- hosts: pi
+  gather_facts: no
+
+  vars:
+    - username: "{{ whoami.stdout }}"
+
+  roles:
+    - setup

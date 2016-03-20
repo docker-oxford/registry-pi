@@ -4,21 +4,34 @@ Docker Registry on a Raspberry Pi.
 
 Tested on Raspberry Pi 3.
 
-## DNS
+## Background
+
+If you have a group of 40 or more people in one room with limited bandwidth, and everyone trying to pull Dockerimages from Docker Hub, you are going to have a bad time.
+
+You can set up a registry proxy or a private registry locally to alleviate the network. This can (relatively easily) be done on a laptop, so why bother with a Raspberry Pi?
+
+* Portable (you can keep it in your jacket pocket)
+* Energy efficient (runs on 5 V so you can use a regular phone charger)
+* Low cost (you don't have to buy a $300 laptop)
+* It's fun :smile:
+
+## Overview
+
+### DNS
 
 Follow the setup in [local-registry](https://github.com/docker-oxford/local-registry) for keys and a trusted DNS.
 
-If you don't set up DNS and real certificates, you can still use your registry, but you'll have to tell everyone using it to add `--insecure-registry ip.or.hostname:port` to  `/etc/defaults/docker` and restart the Docker Engine. That will completely disable security for any interaction with your registry, and may (will) cause (various) problems with authentication later on.
+If you don't set up DNS and real certificates, you can still use your registry, but you'll have to tell everyone using it to add `--insecure-registry ip.or.hostname:port` to  `/etc/defaults/docker` and restart the Docker Engine. That will completely disable security for any interaction with your registry, and may (will) cause (various) problems with authentication later on. This guide assumes that you have a real DNS name and a signed certificate to prove it.
 
-## OS
+### OS
 
-The Hypriot OS lets you run Docker on the pi.
+The [Hypriot OS](http://blog.hypriot.com/downloads/) lets you run Docker on the pi.
 
-## Registry
+### Registry
 
-We will build the registry for arm with `hypriot/rpi-golang` as the base image.
+We will build the registry for ARM with `hypriot/rpi-golang` as the base image.
 
-## Web server
+### Web server
 
 We'll use the web server setup from the [official documentation](https://docs.docker.com/registry/apache/), but alter it slightly to work on pi. This will let us restrict pushing of images to an admin user.
 
@@ -87,7 +100,17 @@ The default SSH username is `root` with password `hypriot`.
 
 You need [Ansible](http://www.ansible.com) installed for this. You can skip this step, but doing this will make it easier and more secure to interact with the pi. If you skip this step, at least change the default root password and disable root SSH access.
 
-Instructions in the [hypriot-pi-setup readme](hypriot-pi-setup/readme.md).
+The role assumes that you already have an SSH key at `~/.ssh/id_rsa`.
+
+    # Add the Raspberry Pi IP to the file `hosts`
+    # Replace 192.168.0.123 with the IP of your Raspberry Pi.
+    echo "[pi]
+    192.168.0.123" > hosts
+
+    # Run the playbook
+    # The password is `hypriot`
+    ansible-playbook initial_setup.yml --user root --ask-pass
+
 
 ## Build Dockerimages
 

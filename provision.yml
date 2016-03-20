@@ -1,0 +1,6 @@
+---
+- hosts: pi
+  become: true
+
+  roles:
+    - registry
